@@ -29,7 +29,7 @@ def calculate_top(nose_pick, nose_top, face_bottom, chin , right_eye, left_eye):
     face_width = get_distance_between_points(chin[0], chin[-1])
     face_height = (((face_width/3)*4)/6)*8
     third = get_distance_between_points(right_eye[3], left_eye[3])
-    third = (((third*3)/6)*8)/3
+    third = (((third*3)/6)*7)/3
     # third_by_width =(face_width / 3) * 4
     # #if third > third_by_width:
     # third = third_by_width
