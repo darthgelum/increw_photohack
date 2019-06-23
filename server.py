@@ -123,12 +123,12 @@ def upload_file():
             top_points = calculate_top(nose_pick, nose_top, face_bottom, chin, right_eye, left_eye)
             face["chin"] = top_points["left"] + face["chin"] + top_points["right"]
 
-            # for facial_feature in face.keys():
-            #     d.line(face[facial_feature], width=5)
-            # d.line([face["chin"][0], face["chin"][25]], width=5)
-            # pil_image.show()
-
-            #print(json.dumps(face))
+            for facial_feature in face.keys():
+                feature = face[facial_feature]
+                j = 0
+                while j < len(feature):
+                    feature[j] = (int(feature[j][0]), int(feature[j][1]))
+                    j += 1
 
             return json.dumps(face)
     return render_template("index.html")

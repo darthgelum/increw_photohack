@@ -17,20 +17,21 @@
         <button id=pocedure>pocedure</button>
         <input type="file" id="files" name="file" />or Drop *.vox files here:</span>
     <img id=img src='data:image/jpg;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAEEAgMAAAAXBY8mAAAADFBMVEUYJAMAAQAyMzFlZmT+5XDDAAAAAXRSTlMAQObYZgAAAllJREFUSMfllk1u1EAQhQtEK8h7g8QRcp+mJXODrLJmY44ym4iospgjJEfyGiE19d/VSraQAWbhmc8lT3e/96pkWMA+13zBk8Jb+eF0jUjX7bAS8v12eImLRp8IHgC+63Mr0SOArbBu+NDp22oVH4kWNPrSiVAXXGt7Thseiep5ov0FKkQ/g4DoCeBu1+VLoxIsX+3s7QliZwDv5BrCQBZG7i6I6S7aRvWuk35vKNteVKWK50xbZyoEZ9mfED3RB9ETmbaeSU571/pp0NJ+wCAzwklP5ARzDV2lA0L60rptV1XSkhWvIJN8aO/q0nv5L9TjAn5j2rDr4e+Z6tkW4mKtOxMvdB9kyTL6YCoprTeqktFnVcmo3vCJCtHIhMXAqewpLwC3Ey0TyfHWUImVeBMqaTFUkmKoJMWPkClUUplMJZMJVCWVSYntT0T2J2q/mSIokKPhxdZze7Qj09XUOnDKYEHztkrpGUGDZ9ESdTGXRnEmUTfkZXWHvKzukLdyQBNRQBNRQDPtf5KK0FBegx3FPUvv882K+6T87UQvTzSYJhpAmmFD+smVKKorOPngxZnUFbdFXAlbxJWwpUpDDOKGGMQNkYgaIlF7PSpKf3UjmZs4+WfFmcxNs1PddDvVTbezagMGSQMGSQMO4gYcxA2YaL8QKkb/auN6CnDyPd5pEnkKNAaWAouBpcBiUK3hnbThnbThg6Thg6ThB3HDD2oXScXpPxwUkR6c8uLvyYkiPRIfT4/Gx9Oj8ak+YIxswBjZgHHSAeOkAyZIBkyQDJhB++VTCXr1wfQLBdJgkepyVNYAAAAASUVORK5CYII'>
-    <!-- <img id=face src='face.jpg' style=display:none> -->
+    <img id=face src='face.jpg' style=display:none>
     <canvas id=canvas></canvas>
     <script>
         "use strict";
-        var json= {chin:[[312,154],[228,212],[174,298],[156,399],[178,498],[259,603],[287,659],[317,712],[347,763],[385,807],[435,841],[491,868],[551,887],[613,877],[664,845],[694,794],[717,739],[729,674],[725,609],[712,545],[698,481],[677,419],[656,287],[597,204],[512,149],[411,132]],
-left_eyebrow:[[274,579],[293,544],[333,525],[378,518],[426,516]],
-right_eyebrow:[[496,485],[526,451],[563,420],[608,398],[651,409]],
-nose_bridge:[[478,530],[493,563],[508,597],[523,632]],
-nose_tip:[[488,683],[514,681],[541,677],[560,663],[579,648]],
-left_eye:[[341,593],[361,569],[392,555],[426,562],[401,583],[370,595]],
-right_eye:[[539,511],[555,481],[585,467],[616,468],[599,493],[569,505]],
-top_lip:[[480,779],[506,758],[529,738],[553,736],[569,721],[598,719],[635,717],[622,723],[577,741],[559,752],[537,757],[495,775]],
-bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779],[495,775],[543,757],[564,751],[582,740],[622,723]]}
         var face;
+        var json=JSON.parse(`{"chin": [[294.8290463939048, 114.81250515951763], [204.5537433708965, 178.15540394880267], [145.390516541323, 271.2234744888005], [126.34643087400002, 379.84794670395667], [150.32077577671117, 487.4917293828064], [259, 603], [287, 659], [317, 712], [347, 763], [385, 807], [435, 841], [491, 868], [551, 887], [613, 877], [664, 845], [694, 794], [717, 739], [729, 674], [725, 609], [712, 545], [698, 481], [677, 419], [667.5082706171936, 259.3207757767112], [604.1653718279085, 169.04547275370297], [511.0973012879107, 109.88224592412945], [402.47282907275445, 90.83816025680647]], "left_eyebrow": [[274, 579], [293, 544], [333, 525], [378, 518], [426, 516]], "right_eyebrow": [[496, 485], [526, 451], [563, 420], [608, 398], [651, 409]], "nose_bridge": [[478, 530], [493, 563], [508, 597], [523, 632]], "nose_tip": [[488, 683], [514, 681], [541, 677], [560, 663], [579, 648]], "left_eye": [[341, 593], [361, 569], [392, 555], [426, 562], [401, 583], [370, 595]], "right_eye": [[539, 511], [555, 481], [585, 467], [616, 468], [599, 493], [569, 505]], "top_lip": [[480, 779], [506, 758], [529, 738], [553, 736], [569, 721], [598, 719], [635, 717], [622, 723], [577, 741], [559, 752], [537, 757], [495, 775]], "bottom_lip": [[635, 717], [616, 748], [595, 766], [576, 777], [554, 785], [522, 787], [480, 779], [495, 775], [543, 757], [564, 751], [582, 740], [622, 723]]}`)
+//         var json= {chin:[[312,154],[228,212],[174,298],[156,399],[178,498],[259,603],[287,659],[317,712],[347,763],[385,807],[435,841],[491,868],[551,887],[613,877],[664,845],[694,794],[717,739],[729,674],[725,609],[712,545],[698,481],[677,419],[656,287],[597,204],[512,149],[411,132]],
+// left_eyebrow:[[274,579],[293,544],[333,525],[378,518],[426,516]],
+// right_eyebrow:[[496,485],[526,451],[563,420],[608,398],[651,409]],
+// nose_bridge:[[478,530],[493,563],[508,597],[523,632]],
+// nose_tip:[[488,683],[514,681],[541,677],[560,663],[579,648]],
+// left_eye:[[341,593],[361,569],[392,555],[426,562],[401,583],[370,595]],
+// right_eye:[[539,511],[555,481],[585,467],[616,468],[599,493],[569,505]],
+// top_lip:[[480,779],[506,758],[529,738],[553,736],[569,721],[598,719],[635,717],[622,723],[577,741],[559,752],[537,757],[495,775]],
+// bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779],[495,775],[543,757],[564,751],[582,740],[622,723]]}
         var Vox = (function(){
             function ch2num(str,b,e){for(var i;b<e--;i+=str.charCodeAt(e))i<<=8;return i} //slice right-to-left sub string char codes as number
             return function Vox(dat){
@@ -242,7 +243,8 @@ bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779
             var lHNxt= lHead[1];
             var rHPre= rHead[0];
             var rHNxt= rHead[1];
-            var dzs= [-1,0,1];
+            //var dzs= [-1,0,1];
+
             for(var lj=1, rj=1, j=-h05*3/5|0, y=lHPre.y; y<yEnd;){
                 for(;y<lHNxt.y && y<rHNxt.y; j++, y+=dy){
                     var lk= (y - lHPre.y)/(lHNxt.y - lHPre.y); //пропорция где находиться левая точка по y
@@ -300,10 +302,12 @@ bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779
                 if(y>=lHNxt.y){
                     lHPre= lHNxt;
                     lHNxt= lHead[lj++]
+                    if(lHNxt===undefined)break;
                 }
                 if(y>=rHNxt.y){
                     rHPre= rHNxt;
-                    rHNxt= rHead[rj++]
+                    rHNxt= rHead[rj++];
+                    if(rHNxt===undefined)break;
                 }
             }
             console.log({vox})
@@ -342,7 +346,7 @@ bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779
                 formData.append("file", files[0]);
 
                 var request = new XMLHttpRequest();
-                request.open("POST", "/");
+                request.open("POST", '/');
                 request.send(formData);
                 request.onreadystatechange = function() { // (3)
                     if (request.readyState != 4) return;
@@ -352,7 +356,7 @@ bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779
                         var reader = new FileReader();
                         reader.onload = (function(theFile) {// Closure to capture the file information.
                             return function(e) {// Render thumbnail.
-                                face = new Image();
+                                face= new Image();
                                 face.onload= function(){
                                     voxelize(JSON.parse(request.response));
                                 }
@@ -360,8 +364,6 @@ bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779
                             };
                         })(files[0]);
                         reader.readAsDataURL(files[0]);// Read in the image file as a data URL.
-
-
                     }
                 }
             }

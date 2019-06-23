@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw
 import json
 import face_recognition
 import math
-image = face_recognition.load_image_file("images/me.jpg")
+image = face_recognition.load_image_file("images/me_right.jpg")
 face_landmarks_list = face_recognition.face_landmarks(image)
 print("I found {} face(s) in this photograph.".format(len(face_landmarks_list)))
 pil_image = Image.fromarray(image)
@@ -89,9 +89,23 @@ face_bottom = chin[8]
 top_points = calculate_top(nose_pick, nose_top, face_bottom, chin, right_eye, left_eye)
 face["chin"] = top_points["left"] + face["chin"] + top_points["right"]
 
+# for facial_feature in face.keys():
+#     d.line(face[facial_feature], width=5)
+# d.line([face["chin"][0], face["chin"][25]], width=5)
+i = 0
+# while i < len(face.keys()):
+#     feature = face.keys()[i]
+#     j = 0
+#     while j < len(feature):
+#         print(feature[j])
+#     i+=1
 for facial_feature in face.keys():
-    d.line(face[facial_feature], width=5)
-d.line([face["chin"][0], face["chin"][25]], width=5)
-pil_image.show()
+    feature = face[facial_feature]
+    j = 0
+    while j < len(feature):
+        feature[j] = (int(feature[j][0]), int(feature[j][1]))
+        j+=1
 
-# print(json.dumps(face))
+# pil_image.show()
+
+print(json.dumps(face))
