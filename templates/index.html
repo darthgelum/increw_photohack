@@ -1,4 +1,374 @@
-<h1>Hi</h1>
-<form>
-    <input name="myFile" type="file">
-</form>
+<!DOCTYPE HTML>
+<html>
+<head>
+    <style>
+        body{margin:0; text-align: center;}
+        #cnv{position:relative; margin:auto; top:0; background:#999;image-rendering: pixelated;}
+        .stat{position:absolute;top:0px;left:0px;}
+        #viewport{text-align: center};
+    </style>
+</head>
+<body>
+    <div id=viewport>
+        <canvas id="cnv"></canvas>
+    </div>
+    <span class=stat>
+        <button id=voxelize onclick=voxelize(json)>voxelize</button>
+        <button id=pocedure>pocedure</button>
+        <input type="file" id="files" name="file" />or Drop *.vox files here:</span>
+    <img id=img src='data:image/jpg;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAEEAgMAAAAXBY8mAAAADFBMVEUYJAMAAQAyMzFlZmT+5XDDAAAAAXRSTlMAQObYZgAAAllJREFUSMfllk1u1EAQhQtEK8h7g8QRcp+mJXODrLJmY44ym4iospgjJEfyGiE19d/VSraQAWbhmc8lT3e/96pkWMA+13zBk8Jb+eF0jUjX7bAS8v12eImLRp8IHgC+63Mr0SOArbBu+NDp22oVH4kWNPrSiVAXXGt7Thseiep5ov0FKkQ/g4DoCeBu1+VLoxIsX+3s7QliZwDv5BrCQBZG7i6I6S7aRvWuk35vKNteVKWK50xbZyoEZ9mfED3RB9ETmbaeSU571/pp0NJ+wCAzwklP5ARzDV2lA0L60rptV1XSkhWvIJN8aO/q0nv5L9TjAn5j2rDr4e+Z6tkW4mKtOxMvdB9kyTL6YCoprTeqktFnVcmo3vCJCtHIhMXAqewpLwC3Ey0TyfHWUImVeBMqaTFUkmKoJMWPkClUUplMJZMJVCWVSYntT0T2J2q/mSIokKPhxdZze7Qj09XUOnDKYEHztkrpGUGDZ9ESdTGXRnEmUTfkZXWHvKzukLdyQBNRQBNRQDPtf5KK0FBegx3FPUvv882K+6T87UQvTzSYJhpAmmFD+smVKKorOPngxZnUFbdFXAlbxJWwpUpDDOKGGMQNkYgaIlF7PSpKf3UjmZs4+WfFmcxNs1PddDvVTbezagMGSQMGSQMO4gYcxA2YaL8QKkb/auN6CnDyPd5pEnkKNAaWAouBpcBiUK3hnbThnbThg6Thg6ThB3HDD2oXScXpPxwUkR6c8uLvyYkiPRIfT4/Gx9Oj8ak+YIxswBjZgHHSAeOkAyZIBkyQDJhB++VTCXr1wfQLBdJgkepyVNYAAAAASUVORK5CYII'>
+<!--    <img id=face src='face.jpg' style=display:none>-->
+    <canvas id=canvas></canvas>
+    <script>
+        "use strict";
+        var json= {chin:[[312,154],[228,212],[174,298],[156,399],[178,498],[259,603],[287,659],[317,712],[347,763],[385,807],[435,841],[491,868],[551,887],[613,877],[664,845],[694,794],[717,739],[729,674],[725,609],[712,545],[698,481],[677,419],[656,287],[597,204],[512,149],[411,132]],
+left_eyebrow:[[274,579],[293,544],[333,525],[378,518],[426,516]],
+right_eyebrow:[[496,485],[526,451],[563,420],[608,398],[651,409]],
+nose_bridge:[[478,530],[493,563],[508,597],[523,632]],
+nose_tip:[[488,683],[514,681],[541,677],[560,663],[579,648]],
+left_eye:[[341,593],[361,569],[392,555],[426,562],[401,583],[370,595]],
+right_eye:[[539,511],[555,481],[585,467],[616,468],[599,493],[569,505]],
+top_lip:[[480,779],[506,758],[529,738],[553,736],[569,721],[598,719],[635,717],[622,723],[577,741],[559,752],[537,757],[495,775]],
+bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779],[495,775],[543,757],[564,751],[582,740],[622,723]]}
+var face;
+        var Vox = (function(){
+            function ch2num(str,b,e){for(var i;b<e--;i+=str.charCodeAt(e))i<<=8;return i} //slice right-to-left sub string char codes as number
+            return function Vox(dat){
+                function chunk(){
+                    chunk.pos = chunk.pos || 8;
+                    var self = (this && this !== window) ? this : {},
+                        id = dat.slice(chunk.pos, chunk.pos+=4),
+                        length = ch2num( dat, chunk.pos, chunk.pos+=4 ),
+                        total = ch2num( dat, chunk.pos, chunk.pos+=4 ),
+                        end = chunk.pos + length + total;
+                    /*DBG*/console.log(id, 'chunk, pos:', chunk.pos - 12, 'length:', length, ', childtotal:', total)
+                    switch(id){
+                        case 'MAIN':
+                            chunk.pos += length;
+                        break; case 'SIZE':
+                            self = this.size = {
+                                x : ch2num( dat, chunk.pos, chunk.pos+=4 ),
+                                y : ch2num( dat, chunk.pos, chunk.pos+=4 ),
+                                z : ch2num( dat, chunk.pos, chunk.pos+=4 )
+                            }
+                            /*DBG*/console.log('\tsize (x,y,z):',self.x,self.y,self.z);
+                        break; case 'XYZI':
+                            self = this.vox = [];
+                            var max = ch2num( dat, chunk.pos, chunk.pos+=4 );
+                            for(var n = 0; n < max; n++)self.push({
+                                x: dat.charCodeAt(chunk.pos++),
+                                y: dat.charCodeAt(chunk.pos++),
+                                z: dat.charCodeAt(chunk.pos++),
+                                i: dat.charCodeAt(chunk.pos++)
+                            });
+                            /*DBG*/console.log('\tvox length:'+self.length+', content:',self);
+                        break; case 'RGBA':
+                            self = this.pal = [];
+                            for(var n = 0; n < 256; )self[++n&255] = [
+                                dat.charCodeAt(chunk.pos++),
+                                dat.charCodeAt(chunk.pos++),
+                                dat.charCodeAt(chunk.pos++),
+                                dat.charCodeAt(chunk.pos++)
+                            ];
+                            /*DBG*/console.log('\tpalette:',self);
+                        break; default:
+                            chunk.pos = end;
+                    }
+                    while(chunk.pos < end) chunk.apply(self);
+                    /*DBG*/console.log('END', id, 'pos:', chunk.pos, 'end:', end);
+                }
+
+                if(dat.constructor!=Object){
+                    var dbg = dbg || 0;
+                    if(dat.slice(0,4)!=='VOX ')throw Error('Vox() dat is not *.vox file');
+                    /*DBG*/console.log('Vox() support v150, dat is v' + ch2num(dat,4,8));
+                    var self = new chunk();
+                }else{
+                    var self = dat;
+                }
+                self.draw = function voxRender(ctx, img){
+                    self.pal = self.pal || [];
+                    if(!self.pal.length)
+                        for(var n = 0; n< 256;)
+                            self.pal[++n&255] = [n,n,n,255];
+
+                    //var pal = document.createElement('canvas');
+                    var x0 = ctx.canvas.width/2,
+                        y0 = ctx.canvas.height/2,
+                        //4:0, 6:8, 8:20, 10:36
+                        z = 10, zz = 36;
+                    ctx.save();
+                    ctx.fillStyle='#999';
+                    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    ctx.translate(x0,y0);
+                    self.vox.sort(function(a, b){return a.x-b.x + a.y-b.y + a.z-b.z})
+                    self.vox.forEach(function(v){
+                        var col = v.i.constructor==Number? self.pal[v.i]: v.i;
+                        ctx.globalCompositeOperation = 'destination-out';
+                        ctx.drawImage(img, 0,zz, 2*z-2,2*z, (v.y - v.x -1)*z, ((v.x + v.y)/2 - v.z -1)*z, 2*z-2, 2*z);
+
+                        ctx.globalCompositeOperation = 'destination-over';
+                        ctx.fillStyle = 'rgb('+col.slice(0,3)+')';
+                        ctx.fillRect((v.y - v.x -1)*z, ((v.x + v.y)/2 - v.z -1)*z, 2*z-2, 2*z);
+
+                        ctx.globalCompositeOperation = 'lighter';
+                        //ctx.strokeStyle = 'rgba('+col.slice(0,3)+',.7)';
+                        //ctx.strokeRect((v.y - v.x)*z, (v.x + v.y - v.z*13/zz)*z/2, z,z);
+                        ctx.drawImage(img, 0,zz, 2*z-2,2*z, (v.y - v.x -1)*z, ((v.x + v.y)/2 - v.z -1)*z, 2*z-2, 2*z);
+                    });
+                    ctx.restore();
+                }
+                return self;
+            }
+        })();
+        pocedure.onclick= function(){
+            var w=64, h=64, d=64;
+            function sphere(x0,y0,z0,r,col,vox){
+                var signs=Array(w*h), vox=vox||[];
+                for(z=d;z--;)
+                    for(y=h;y--;)
+                        for(x=w;x--;)
+                            //if( (signs[x+y*w]<=0)^ ( (signs[x+y*w]= Math.hypot(x-x0,y-y0,z-z0)-r )<=0 ) )
+                            if( Math.abs(Math.hypot(x-x0,y-y0,z-z0)-r )<=1 )
+                                vox.push({x,y,z,i:col})
+                return vox;
+            }
+            var vox= sphere(w>>1,h>>1,d>>1,w/2,[0x80,0x60,0x08])
+            vox= sphere(w*3/4,h*3/4,d*3/4,w>>3,[128,128,128],vox)
+            vox= sphere(w/4,h*3/4,d*3/4,w>>3,[128,128,128],vox)
+            vox= sphere(w/6,h*5/6,d*7/8,w>>4,[1,1,1],vox)
+            vox= sphere(w*5/6,h*5/6,d*7/8,w>>4,[1,1,1],vox)
+            var unit = Vox({size:{x:w,y:h,z:d}, vox});
+            unit.draw(cnv.getContext('2d'), document.getElementById('img'));
+        }
+        function rotate(center, sn, cs){
+            return this.map(dot=> {
+                dot= {x:dot.x-center.x, y:dot.y-center.y};
+                dot= {x:dot.x*cs + sn*dot.y, y:cs*dot.y - sn*dot.x};
+                return {x: dot.x+center.x, y: dot.y+center.y};
+            } );
+        }
+        function boundRect(dots){
+            var tmp= dots.reduce((dot,{x,y})=>({
+                left:Math.min(x,dot.left),top:Math.min(y,dot.top),
+                right:Math.max(x,dot.left),bottom:Math.max(y,dot.top)}),
+            {left:9e9,top:9e9,right:-9e9,bottom:-9e9});
+            return Object.assign(dots, tmp, {x:(tmp.left+tmp.right)/2|0, y:(tmp.top+tmp.bottom)/2|0, w:tmp.right - tmp.left, h:tmp.bottom - tmp.top});
+        }
+        function voxelize(json){
+            var h=64, w=37, d=40, w05= w>>1, h05=h>>1;
+            var vox=[];
+            var lHead= json.chin.slice(0,json.chin.length/2).map(pair=>({x:pair[0],y:pair[1]}));
+            var rHead= json.chin.slice(json.chin.length/2).map(pair=>({x:pair[0],y:pair[1]}));
+
+            var upHead= {x:lHead[0].x, y:lHead[0].y};
+            var dnHead= {x:rHead[0].x, y:rHead[0].y};
+            //дублирование симетричных самим себе точек, дабы не было острого угла
+            var dupOffset=3;
+            rHead.push({x:lHead[0].x+dupOffset, y:lHead[0].y});
+            lHead[0].x-=dupOffset;
+            lHead.push({x:rHead[0].x-dupOffset, y:rHead[0].y});
+            rHead[0].x+=dupOffset;
+
+            var center= {x:(lHead[0].x +rHead[0].x)/2, y:(rHead[0].y -lHead[0].y)/2}
+            var angle= Math.atan2(lHead[0].x -rHead[0].x, rHead[0].y -lHead[0].y);
+            var cs= Math.cos(angle), sn= Math.sin(angle);
+            //поворот текстуры в строгую вертикаль
+            //var canvas= document.createElement('canvas');
+            canvas.width= face.naturalWidth; canvas.height= face.naturalHeight;
+            var ctx= canvas.getContext('2d');
+            ctx.translate(center.x, center.y);
+            ctx.rotate(-angle);
+            ctx.translate(-center.x,-center.y);
+            //ctx.setTransform(cs,-sn,sn,cs,0,0);
+            ctx.drawImage(face, 0, 0, face.naturalWidth, face.naturalHeight);
+            var texture= ctx.getImageData(0, 0, face.naturalWidth, face.naturalHeight);
+            var tex= texture.data;
+
+            //поворот точек в вертикаль
+            // var lHead= lHead; var rHead= rHead;
+            lHead= rotate.call(lHead, center, sn, cs);
+            rHead= rotate.call(rHead, center, sn, cs);
+
+            var nose_bridge= boundRect(rotate.call(json.nose_bridge.map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            nose_bridge.left-=24;
+            nose_bridge.right+=24;
+            var nose_tip= boundRect(rotate.call(json.nose_tip.map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            nose_tip.top-=32;
+            nose_tip.bottom+=32;
+            nose_tip.left-=-12;
+            nose_tip.right+=-12;
+            var left_eyebrow= boundRect(rotate.call(json.left_eyebrow.map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            left_eyebrow.top-=24;
+            left_eyebrow.bottom+=24;
+            var right_eyebrow= boundRect(rotate.call(json.right_eyebrow.map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            right_eyebrow.top-=24;
+            right_eyebrow.bottom+=24;
+            var left_eye= boundRect(rotate.call(json.left_eye.map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            var right_eye= boundRect(rotate.call(json.right_eye.map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            var top_lip= boundRect(rotate.call(json.top_lip.slice(0,7).map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            top_lip.top-=24;
+            top_lip.bottom+=24;
+            var bottom_lip= boundRect(rotate.call(json.bottom_lip.slice(0,7).map(pair=>({x:pair[0],y:pair[1]})), center, sn, cs));
+            bottom_lip.top-=24;
+            bottom_lip.bottom+=24;
+            console.log({left_eyebrow})
+            //тестовая проверка отрисовки точек
+            ctx.setTransform(1,0,0,1,0,0);
+            ctx.lineWidth=4; ctx.strokeStyle='#fff';
+            ctx.beginPath();//лицо
+            lHead.forEach(dot=> ctx.lineTo(dot.x, dot.y) );
+            rHead.forEach(dot=> ctx.lineTo(dot.x, dot.y) );
+            //другие части лица:
+            nose_bridge.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            nose_tip.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            left_eyebrow.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            right_eyebrow.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            left_eye.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            right_eye.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            top_lip.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+            bottom_lip.forEach((dot,i)=>ctx[i?'lineTo':'moveTo'](dot.x,dot.y) );
+
+
+            ctx.stroke();
+            //return
+
+            //вокселизация:
+            var y=lHead[0].y, yEnd= rHead[0].y;
+            rHead = rHead.reverse();
+            console.log({rHead,lHead})
+            var dy= (yEnd-y)/h;
+            var lHPre= lHead[0];
+            var lHNxt= lHead[1];
+            var rHPre= rHead[0];
+            var rHNxt= rHead[1];
+            var dzs= [-1,0,1];
+            for(var lj=1, rj=1, j=-h05*3/5|0, y=lHPre.y; y<yEnd;){
+                for(;y<lHNxt.y && y<rHNxt.y; j++, y+=dy){
+                    var lk= (y - lHPre.y)/(lHNxt.y - lHPre.y); //пропорция где находиться левая точка по y
+                    var lx= lHNxt.x*lk + lHPre.x*(1-lk);        //что бы интерполировать линейно ее х
+                    var rk= (y - rHPre.y)/(rHNxt.y - rHPre.y); //то же самое для правой точки
+                    var rx= rHNxt.x*rk + rHPre.x*(1-rk);
+
+                    var x0= upHead.x, r= lx - x0, r2= r+r;
+                    var dx= (rx - lx) / w;
+                    //console.log({'lx - x0':lx - x0, j,lj,rj, y, r, r2,x0,dx, lk,lx,rk,rx})
+                    for(var i= -w05, _z= 0, z= 0, x= lx; i < w05; i++, x+=dx){
+                        var idx= 4 * ((x|0) + (y|0) * canvas.width);
+                        var col= tex.slice(idx, idx + 3);
+                        _z=z;
+                        //faceline:
+                        var z = 0|(1-Math.pow(i/w05,2))*w05+(1-Math.pow((j-h05*3/5|0)/h05,2) )*7;
+                        if(nose_bridge.top<y && y<nose_bridge.bottom && nose_bridge.left<x && x<nose_bridge.right){
+                            var kz= Math.sqrt((y-nose_bridge.top)/(nose_bridge.bottom-nose_bridge.top));
+                            z+=4*kz;
+                        }else if(nose_tip.top<y && y<nose_tip.bottom && nose_tip.left<x && x<nose_tip.right){
+                            var kz= .5+(y-nose_tip.top)/(nose_tip.bottom-nose_tip.top)/2;
+                            //var kz2= .5+ Math.pow((x-nose_tip.x)*2/nose_tip.w,2)/2;
+                            z+=4*kz//*kz2;
+                        }else if(left_eyebrow.top<y && y<left_eyebrow.bottom && left_eyebrow.left<x && x<left_eyebrow.right){
+                            var kz2= (1-Math.pow((y-left_eyebrow.y)/left_eyebrow.h,2));
+                            z+=2*kz2;
+                        }else if(right_eyebrow.top<y && y<right_eyebrow.bottom && right_eyebrow.left<x && x<right_eyebrow.right){
+                            var kz2= (1-Math.pow((y-right_eyebrow.y)/right_eyebrow.h,2));
+                            z+=2*kz2;
+                        }else if(top_lip.top<y && y<top_lip.bottom && top_lip.left<x && x<top_lip.right){
+                            var kz2= (1-Math.pow((y-top_lip.y)/top_lip.h,2));
+                            z+=3*kz2;
+                        }else if(bottom_lip.top<y && y<bottom_lip.bottom && bottom_lip.left<x && x<bottom_lip.right){
+                            var kz2= (1-Math.pow((y-top_lip.y)/top_lip.h,2));
+                            z+=3*kz2;
+                        }else if(left_eye.top<y && y<left_eye.bottom && left_eye.left<x && x<left_eye.right){
+                            z-=2;
+                        }else if(right_eye.top<y && y<right_eye.bottom && right_eye.left<x && x<right_eye.right){
+                            z-=2;
+                        }
+
+                        /*
+                        nose_bridge nose_tip
+                        left_eyebrow right_eyebrow
+                        top_lip bottom_lip
+                        left_eye right_eye
+                        */
+                        do{
+                            vox.push({x:i+w05, z:h05-j, y:_z|0, i:col});
+                            _z+= Math.sign(z- _z);
+                        }while(_z^z);
+                    }
+
+                }
+                if(y>=lHNxt.y){
+                    lHPre= lHNxt;
+                    lHNxt= lHead[lj++]
+                }
+                if(y>=rHNxt.y){
+                    rHPre= rHNxt;
+                    rHNxt= rHead[rj++]
+                }
+            }
+            console.log({vox})
+            var unit = Vox({size:{x:w,y:h,z:d}, vox});
+            unit.draw(cnv.getContext('2d'), document.getElementById('img'));
+        }
+        cnv.width = innerWidth;
+        cnv.height = innerHeight*1.5;
+        function readFull(evt) {
+            evt = evt || window.event || {};
+            var files = document.getElementById('files').files;
+            if(evt.dataTransfer){
+                evt.stopPropagation();
+                evt.preventDefault();
+                files = evt.dataTransfer.files;
+            }
+            if (!files.length) return;
+            console.log(files[0]);
+            if(/\.vox$/.test(files[0].name)){
+                var reader = new FileReader();
+                reader.onloadend = function(evt) {    // If we use onloadend, we need to check the readyState.
+                    if (evt.target.readyState !== FileReader.DONE) return;
+                    //voxParse(evt.target.result);
+                    var timestart = window.performance.now();
+                    var unit = Vox(evt.target.result);
+                    console.log('vox parse', -(timestart-(timestart-=(timestart-=window.performance.now()))) );
+                    unit.draw(cnv.getContext('2d'), document.getElementById('img'));
+                    console.log('vox draw', -(timestart-(timestart-=(timestart-=window.performance.now()))) );
+                };
+                reader.readAsBinaryString(files[0]);
+            }else{
+                var formData = new FormData();
+                // Файл, выбранный пользователем
+                formData.append("type", "file");
+                formData.append("name", "name");
+                formData.append("file", files[0]);
+                console.log(files[0]);
+                 face= new Image();
+                 face.onload = function(){
+                    var request = new XMLHttpRequest();
+                request.open("POST", "/");
+                request.send(formData);
+                request.onreadystatechange = function() { // (3)
+                    if (request.readyState != 4) return;
+                    if (request.status != 200) {
+                        alert(request.status + ': ' + request.statusText);
+                    } else {
+                        voxelize(JSON.parse(request.response));
+                    }
+                }
+                 }
+                 face.src= "/static/"+ files[0].name
+
+                
+            }
+        }
+
+        var dropZone = document.getElementById('cnv');
+        dropZone.addEventListener('dragover', function handleDragOver(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+            evt.dataTransfer.dropEffect = 'copy';
+        }, false);
+        dropZone.addEventListener('drop', readFull, false);
+        document.getElementById('files').addEventListener('change', readFull, false);
+    </script>
+</body>
+</html>

@@ -5,7 +5,7 @@ import os
 from flask import Flask, render_template, request, flash, url_for
 from werkzeug.utils import redirect, secure_filename
 
-UPLOAD_FOLDER = './images/web'
+UPLOAD_FOLDER = './static'
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'gif'}
 
 app = Flask(__name__)
@@ -131,19 +131,11 @@ def upload_file():
             #print(json.dumps(face))
 
             return json.dumps(face)
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
+    return render_template("index.html")
 
 
 app.debug = True
-app.run(host='0.0.0.0', port=80)
+app.run(host='0.0.0.0', port=5000)
 
 
 
