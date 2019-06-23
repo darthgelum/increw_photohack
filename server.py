@@ -1,4 +1,3 @@
-from PIL import Image, ImageDraw
 import json
 import face_recognition
 import math
