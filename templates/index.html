@@ -352,9 +352,11 @@ bottom_lip:[[635,717],[616,748],[595,766],[576,777],[554,785],[522,787],[480,779
                         var reader = new FileReader();
                         reader.onload = (function(theFile) {// Closure to capture the file information.
                             return function(e) {// Render thumbnail.
-                            face = new Image();
-                            face.src=e.target.result;
-                            voxelize(JSON.parse(request.response));
+                                face = new Image();
+                                face.onload= function(){
+                                    voxelize(JSON.parse(request.response));
+                                }
+                                face.src=e.target.result;
                             };
                         })(files[0]);
                         reader.readAsDataURL(files[0]);// Read in the image file as a data URL.
