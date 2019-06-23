@@ -2,11 +2,24 @@ from PIL import Image, ImageDraw
 import json
 import face_recognition
 import math
-image = face_recognition.load_image_file("images/me.jpg")
-face_landmarks_list = face_recognition.face_landmarks(image)
-print("I found {} face(s) in this photograph.".format(len(face_landmarks_list)))
-pil_image = Image.fromarray(image)
-d = ImageDraw.Draw(pil_image)
+import os
+from flask import Flask, render_template, request, flash, url_for
+from werkzeug.utils import redirect, secure_filename
+
+UPLOAD_FOLDER = './images/web'
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'gif'}
+
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+
+
 
 
 def calculate_top(nose_pick, nose_top, face_bottom, chin , right_eye, left_eye):
@@ -75,23 +88,61 @@ def get_distance_between_points(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-face = face_landmarks_list[0]
-nose_bridge = face["nose_bridge"]
-nose_tip = face["nose_tip"]
-chin = face["chin"]
-right_eye = face["right_eye"]
-left_eye = face["left_eye"]
-nose_pick = nose_bridge[3]
-nose_bottom = nose_tip[2]
-nose_top = nose_bridge[0]
-face_bottom = chin[8]
+@app.route('/', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-top_points = calculate_top(nose_pick, nose_top, face_bottom, chin, right_eye, left_eye)
-face["chin"] = top_points["left"] + face["chin"] + top_points["right"]
+            image = face_recognition.load_image_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            face_landmarks_list = face_recognition.face_landmarks(image)
 
-for facial_feature in face.keys():
-    d.line(face[facial_feature], width=5)
-d.line([face["chin"][0], face["chin"][25]], width=5)
-pil_image.show()
+            face = face_landmarks_list[0]
+            nose_bridge = face["nose_bridge"]
+            nose_tip = face["nose_tip"]
+            chin = face["chin"]
+            right_eye = face["right_eye"]
+            left_eye = face["left_eye"]
+            nose_pick = nose_bridge[3]
+            nose_bottom = nose_tip[2]
+            nose_top = nose_bridge[0]
+            face_bottom = chin[8]
 
-# print(json.dumps(face))
+            top_points = calculate_top(nose_pick, nose_top, face_bottom, chin, right_eye, left_eye)
+            face["chin"] = top_points["left"] + face["chin"] + top_points["right"]
+
+            # for facial_feature in face.keys():
+            #     d.line(face[facial_feature], width=5)
+            # d.line([face["chin"][0], face["chin"][25]], width=5)
+            # pil_image.show()
+
+            #print(json.dumps(face))
+
+            return json.dumps(face)
+    return '''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>Upload new File</h1>
+    <form method=post enctype=multipart/form-data>
+      <input type=file name=file>
+      <input type=submit value=Upload>
+    </form>
+    '''
+
+
+app.debug = True
+app.run(host='0.0.0.0', port=5000)
+
+
+
